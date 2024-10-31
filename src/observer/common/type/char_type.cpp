@@ -13,6 +13,30 @@ See the Mulan PSL v2 for more details. */
 #include "common/type/char_type.h"
 #include "common/value.h"
 
+bool is_lunar_year(int year){
+  return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+}
+
+bool check_date_format(int year, int month, int day)
+{
+  int month_days[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+  if (year < 0 || year > 9999) {
+    LOG_WARN("year out of range");
+    return false;
+  }
+
+  if (month < 1 || month > 12) {
+    LOG_WARN("month out of range");
+    return false;
+  }
+
+  if (day < 1|| (month!=2 && day>month_days[month-1]) || (month==2 && day>(is_lunar_year(year)?29:28))){
+    LOG_WARN("day out of range");
+    return false;
+  }
+  return true;
+}
+
 int CharType::compare(const Value &left, const Value &right) const
 {
   ASSERT(left.attr_type() == AttrType::CHARS && right.attr_type() == AttrType::CHARS, "invalid type");
@@ -29,6 +53,22 @@ RC CharType::set_value_from_str(Value &val, const string &data) const
 RC CharType::cast_to(const Value &val, AttrType type, Value &result) const
 {
   switch (type) {
+    case AttrType::DATES: {
+      result.attr_type_ = AttrType::DATES;
+      int year,month,day;
+      if(sscanf(val.value_.pointer_value_, "%d-%d-%d", &year, &month, &day) != 3) {
+        LOG_WARN("invalid date format: %s",val.value_.pointer_value_);
+        return RC::INVALID_DATE_FORMAT;
+      }
+       
+      if (!check_date_format(year, month, day)) {
+        LOG_WARN("invalid date: %d-%d-%d", year, month, day);
+        return RC::INVALID_DATE_FORMAT;
+      }
+
+      result.set_date(year, month, day);
+
+    }break;
     default: return RC::UNIMPLEMENTED;
   }
   return RC::SUCCESS;
@@ -38,6 +78,9 @@ int CharType::cast_cost(AttrType type)
 {
   if (type == AttrType::CHARS) {
     return 0;
+  }
+  if (type == AttrType::DATES) {
+    return 1;
   }
   return INT32_MAX;
 }

@@ -34,6 +34,7 @@ public:
   friend class FloatType;
   friend class BooleanType;
   friend class CharType;
+  friend class DateType;
   friend class VectorType;
 
   Value() = default;
@@ -90,6 +91,7 @@ public:
   void set_data(const char *data, int length) { this->set_data(const_cast<char *>(data), length); }
   void set_value(const Value &value);
   void set_boolean(bool val);
+  void set_date(int year, int month, int day);
 
   string to_string() const;
 
@@ -115,7 +117,7 @@ private:
   void set_float(float val);
   void set_string(const char *s, int len = 0);
   void set_string_from_other(const Value &other);
-
+   
 private:
   AttrType attr_type_ = AttrType::UNDEFINED;
   int      length_    = 0;
